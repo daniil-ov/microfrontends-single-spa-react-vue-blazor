@@ -1,0 +1,424 @@
+from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, DateTime, func
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker, relationship
+import bcrypt
+import jwt
+from sqlalchemy.types import TIMESTAMP
+from sqlalchemy.dialects import mysql
+from sqlalchemy.dialects.mysql import TEXT
+
+Base = declarative_base()
+
+engine = create_engine('mysql+pymysql://root:1234@127.0.0.1/diplom?charset=utf8', echo=True)
+
+Session = sessionmaker(bind=engine)
+
+
+class Document(Base):
+    __tablename__ = 'documents'
+    id = Column(Integer, primary_key=True)
+    name = Column(String(500))
+    text = Column(TEXT)
+    created_date = Column(DateTime(timezone=True), server_default=func.now())
+
+    def __init__(self, name, text, created_date):
+        self.name = name
+        self.text = text
+        self.created_date = created_date
+
+
+def get_document(id):
+    find_doc = dict.fromkeys(['id', 'text'])
+    session = Session()
+    find_doc_bd = session.query(Document).filter(Document.id == id).first()
+    find_doc['id'] = find_doc_bd.id
+    find_doc['text'] = find_doc_bd.text
+    session.commit()
+    session.close()
+    return find_doc
+
+
+def update_document(id_doc, data):
+    if id_doc == 'new':
+        # print(data_problem, 'data_problem')
+        session = Session()
+        new_doc = Document(data['name'], data['name'])
+        session.add(new_doc)
+        session.commit()
+        session.close()
+        return 'ok'
+    elif id_doc != 'new':
+        # print(data_problem, 'data_problem')
+        session = Session()
+        find_doc = session.query(Document).filter(Document.id == id_doc).first()
+        find_doc.name = ''
+        find_doc.text = data['text']
+        session.commit()
+        session.close()
+        return 'ok'
+    else:
+        return 'error'
+
+class Comment(Base):
+    __tablename__ = 'comments'
+    id = Column(Integer, primary_key=True)
+    name = Column(String(500))
+    text = Column(TEXT)
+    created_date = Column(DateTime(timezone=True), server_default=func.now())
+
+    def __init__(self, name, text, created_date):
+        self.name = name
+        self.text = text
+        self.created_date = created_date
+
+
+def get_all_comment():
+    all_comment = {}
+    # find_doc = dict.fromkeys(['id', 'text'])
+    session = Session()
+    for comment in session.query(Comment).all():
+        all_comment.update({comment.id: comment.text})
+    session.commit()
+    session.close()
+    print('all_comment', all_comment)
+    return all_comment
+
+
+
+def update_comment(id_doc, data):
+    if id_doc == 'new':
+        # print(data_problem, 'data_problem')
+        session = Session()
+        new_doc = Comment('', data['text'], None)
+        session.add(new_doc)
+        session.commit()
+        session.close()
+        return 'ok'
+    elif id_doc != 'new':
+        # print(data_problem, 'data_problem')
+        session = Session()
+        find_doc = session.query(Comment).filter(Comment.id == id_doc).first()
+        find_doc.name = ''
+        find_doc.text = data['text']
+        session.commit()
+        session.close()
+        return 'ok'
+    else:
+        return 'error'
+
+
+
+
+
+
+
+class User(Base):
+    __tablename__ = 'users'
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String(40))
+    second_name = Column(String(40))
+    third_name = Column(String(40))
+    email = Column(String(40), unique=True)
+    user_status = Column(Integer)
+    password_digest = Column(String(100))
+    created_date = Column(DateTime(timezone=True), server_default=func.now())
+
+    def __init__(self, name, second_name, third_name, email, user_status, password_digest):
+        self.name = name
+        self.second_name = second_name
+        self.third_name = third_name
+        self.email = email
+        self.user_status = user_status
+        self.password_digest = password_digest
+
+    def add_user(self):
+        session_for_new_user = Session()
+        new_user = User(self.username, self.email,
+                        bcrypt.hashpw(self.password_digest.encode('utf-8'), bcrypt.gensalt()))
+        session_for_new_user.add(new_user)
+        session_for_new_user.commit()
+        session_for_new_user.close()
+
+    def find_user_from_id(self):
+        find_user = dict.fromkeys(['username', 'email'])
+
+        session = Session()
+        for user in session.query(User).filter(User.id == self.id):
+            find_user['username'] = user.username
+            find_user['email'] = user.email
+
+        if find_user:
+            success = True
+
+        else:
+            success = False
+        session.commit()
+        session.close()
+
+        if success:
+            print(find_user['username'], 'nameuser-------------')
+            return find_user
+        else:
+            return False
+
+    def check_uniqueness(self):
+        user = dict.fromkeys(['user'])
+        errors = {}
+        session = Session()
+
+        find_user = session.query(User).filter(User.username == self.username).one_or_none()
+        if find_user is None:
+            pass
+        else:
+            errors['username'] = find_user.username
+            errors['email'] = find_user.email
+            user['user'] = errors
+
+        find_user = session.query(User).filter(User.email == self.email).one_or_none()
+        if find_user is None:
+            pass
+        else:
+            errors['username'] = find_user.username
+            errors['email'] = find_user.email
+            user['user'] = errors
+
+        session.commit()
+        session.close()
+
+        return user
+
+    def auth(self):
+        session = Session()
+        response = {'isValid': False, 'errors': None, 'jwt': None}
+        errors = dict.fromkeys(['errors'])
+        form = dict.fromkeys(['form'])
+
+        find_user_for_auth = session.query(User).filter(User.email == self.email).one_or_none()
+        if find_user_for_auth is None:
+            form['form'] = 'Пользователь с такой почтой не найден'
+            response['errors'] = form
+            session.commit()
+            session.close()
+            return response
+        else:
+            if bcrypt.checkpw(self.password_digest.encode('utf-8'), find_user_for_auth.password_digest.encode('utf-8')):
+                encoded_jwt = jwt.encode({'id': find_user_for_auth.id, 'email': find_user_for_auth.email}, '!secret!',
+                                         algorithm='HS256').decode('utf-8')
+                print("нашел такого пользователя")
+                response['isValid'] = True
+                response['jwt'] = encoded_jwt
+                session.commit()
+                session.close()
+                return response
+            else:
+                form['form'] = 'Пароль неверный'
+                response['errors'] = form
+                session.commit()
+                session.close()
+                return response
+
+
+class Tests_stat(Base):
+    __tablename__ = 'tests_stat'
+    id = Column(Integer, primary_key=True)
+    user_id = Column(
+        Integer,
+        ForeignKey('users.id'),
+        nullable=False,
+    )
+    test_id = Column(
+        Integer,
+        ForeignKey('tests.id'),
+        nullable=False
+    )
+    answers = Column(String(500))
+    try_count = Column(Integer, default=-1)
+    start_time = Column(TIMESTAMP(timezone=True), server_default=func.now())
+
+    def __init__(self, user_id, test_id, answers):
+        self.user_id = user_id
+        self.test_id = test_id
+        self.answers = answers
+
+
+class Courses(Base):
+    __tablename__ = 'courses'
+    id = Column(Integer, primary_key=True)
+    name_course = Column(String(100), unique=True)
+    description_course = Column(mysql.TEXT(collation=u'utf8_general_ci'), nullable=False)
+    owner_id = Column(
+        Integer,
+        ForeignKey('users.id'),
+        nullable=False)
+    public = Column(Integer)
+    status = Column(Integer)
+    created_date = Column(DateTime(timezone=True), server_default=func.now())
+
+    def __init__(self, name_course, description_course, owner_id, public):
+        self.name_course = name_course
+        self.description_course = description_course
+        self.owner_id = owner_id
+        self.public = public
+
+
+class Problem_status(Base):
+    __tablename__ = 'problem_status'
+    STATUS_INITIAL = 0
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String(20), unique=True)
+
+
+class Problems(Base):
+    __tablename__ = 'problems'
+    id = Column(Integer, primary_key=True)
+    course_id = Column(
+        Integer,
+        ForeignKey('courses.id'),
+        nullable=False
+    )
+    type_question = Column(Integer)
+    status_id = Column(
+        Integer,
+        ForeignKey('problem_status.id'),
+        nullable=False,
+        default=Problem_status.STATUS_INITIAL)
+    theory_id = Column(
+        Integer,
+        ForeignKey('theory.id')
+    )
+    body = Column(String(3000))
+    solution = Column(String(3000))
+    answer = Column(String(100))
+    answer_1 = Column(String(100))
+    answer_2 = Column(String(100))
+    answer_3 = Column(String(100))
+    answer_4 = Column(String(100))
+    mark = Column(Integer)
+    created_date = Column(DateTime(timezone=True), server_default=func.now())
+
+    def __init__(self, course_id, type_question, status_id, theory_id, body, solution, answer, answer_1, answer_2,
+                 answer_3, answer_4, mark):
+        self.course_id = course_id
+        self.type_question = type_question
+        self.status_id = status_id
+        self.theory_id = theory_id
+        self.body = body
+        self.solution = solution
+        self.answer = answer
+        self.answer_1 = answer_1
+        self.answer_2 = answer_2
+        self.answer_3 = answer_3
+        self.answer_4 = answer_4
+        self.mark = mark
+
+    def get_problem(self, id):
+        find_problem = dict.fromkeys(['body'])
+
+        session = Session()
+        for body in session.query(Problems.id).filter(Problems.id == id):
+            print(body)
+
+        for problem in session.query(Problems).filter(Problems.id == id):
+            find_problem['body'] = problem.body
+
+        if find_problem:
+            success = True
+        else:
+            success = False
+
+        session.commit()
+        session.close()
+
+        if success:
+            print(str(find_problem['body'].encode('utf-8')), 'body-------------1')
+            return find_problem
+        else:
+            return False
+
+
+class Tests(Base):
+    __tablename__ = 'tests'
+    id = Column(Integer, primary_key=True)
+    course_id = Column(
+        Integer,
+        ForeignKey('courses.id'),
+        nullable=False,
+    )
+    problems = Column(String(300))
+    owner = Column(Integer)
+    duration = Column(Integer)
+    created_date = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class Gen_test(Base):
+    __tablename__ = 'gen_test'
+    id = Column(Integer, primary_key=True)
+    active = Column(Integer)
+    theory_id = Column(
+        Integer,
+        ForeignKey('theory.id')
+    )
+    description = Column(mysql.TEXT(collation=u'utf8_general_ci'))
+    module_id = Column(
+        Integer,
+        ForeignKey('modules.id')
+    )
+    count_prob = Column(Integer)
+    random_switch = Column(Integer)
+    duration_test = Column(Integer)
+    try_count = Column(Integer)
+    scales = String(30)
+    access_from = Column(DateTime(timezone=True))
+    access_to = Column(DateTime(timezone=True))
+    created_date = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class Theory(Base):
+    __tablename__ = 'theory'
+    id = Column(Integer, primary_key=True)
+    name_theory = Column(String(200))
+    course_id = Column(Integer)
+    parent_id = Column(Integer)
+    tests_id = Column(String(300))
+    body = Column(String(3000))
+    files = Column(String(100))
+    created_date = Column(DateTime(timezone=True), server_default=func.now())
+
+    def __init__(self, name_theory, course_id, parent_id, tests_id, body, files):
+        self.name_theory = name_theory
+        self.course_id = course_id
+        self.parent_id = parent_id
+        self.tests_id = tests_id
+        self.body = body
+        self.files = files
+
+
+class Modules(Base):
+    __tablename__ = 'modules'
+    id = Column(Integer, primary_key=True)
+    name_module = Column(String(100), unique=True)
+    course_id = Column(
+        Integer,
+        ForeignKey('courses.id'),
+        nullable=False,
+    )
+    tests_id = Column(
+        String(100))
+    order = Column(Integer)
+    theory_id = Column(
+        String(50))
+    description = Column(String(1000))
+    created_date = Column(DateTime(timezone=True), server_default=func.now())
+
+    def __init__(self, name_module, course_id, test_id, order, theory_id, description):
+        self.name_module = name_module
+        self.course_id = course_id
+        self.test_id = test_id
+        self.order = order
+        self.theory_id = theory_id
+        self.description = description
+
+
+Base.metadata.create_all(bind=engine)

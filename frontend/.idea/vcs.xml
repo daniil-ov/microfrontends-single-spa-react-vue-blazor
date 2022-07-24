@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="VcsDirectoryMappings">
+    <mapping directory="$PROJECT_DIR$/exp/navbar" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/exp/rate-dogs" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/exp/root-config" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/exp/shared-dependencies" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/exp_root_config" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/navbar" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/new-vue-app" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/rate-dogs" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/react-app" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/root-app" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/shared-dependencies" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/test_vue_rate_dog" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/vue-app" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/vue-app-old" vcs="Git" />
+  </component>
+</project>

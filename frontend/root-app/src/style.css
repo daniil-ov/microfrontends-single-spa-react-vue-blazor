@@ -1,0 +1,50 @@
+.watermark_blazor {
+    position: relative;
+    outline: 3px dashed #551edd;
+    padding: 5px;
+    margin: 10px;
+}
+.watermark_blazor::after {
+    content: "Blazor Webassembly";
+    position: absolute;
+    bottom: 0;
+    right: 5px;
+    opacity: 0.5;
+    font-size: 1.5em;
+    color: #551edd;
+}
+
+.watermark_react {
+    position: relative;
+    outline: 3px dashed #61dafb;
+    padding: 5px;
+    margin: 10px;
+    padding-bottom: 30px;
+}
+.watermark_react::after {
+    content: "React.js";
+    position: absolute;
+    bottom: 0;
+    right: 5px;
+    opacity: 0.5;
+    font-size: 1.5em;
+    color: #61dafb;
+}
+
+.watermark_vue {
+    position: relative;
+    outline: 3px dashed #41b883;
+    padding: 5px;
+    margin: 10px;
+    padding-bottom: 30px;
+}
+.watermark_vue::after {
+    content: "Vue";
+    position: absolute;
+    bottom: 0;
+    right: 5px;
+    opacity: 0.5;
+    font-size: 1.5em;
+    color: #41b883;
+}
+

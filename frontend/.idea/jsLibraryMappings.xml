@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="JavaScriptLibraryMappings">
+    <excludedPredefinedLibrary name="single_spa_all/exp_root_config/node_modules" />
+    <excludedPredefinedLibrary name="single_spa_all/navbar/node_modules" />
+  </component>
+</project>
